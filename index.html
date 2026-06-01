@@ -3,212 +3,315 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Supply Sentinel - 供給制約シナリオ分析・製品優先度判断ダッシュボード</title>
+  <title>Supply Sentinel - AI Early Warning & Scenario Decision Support</title>
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./styles.agents.css">
 </head>
-<body class="scenario-app">
+<body>
   <div class="boot-loader" id="boot-loader" role="status" aria-live="polite">
     <div class="boot-card">
       <span class="boot-orbit" aria-hidden="true"></span>
       <div>
         <strong>Supply Sentinel 起動中</strong>
-        <p id="boot-loader-text">供給制約シナリオと企業判断基準を読み込んでいます</p>
+        <p id="boot-loader-text">Cloud API と供給網データを読み込んでいます</p>
       </div>
-      <ol class="boot-steps" aria-label="読み込み状態">
-        <li>Scenario</li>
-        <li>Company Policy</li>
-        <li>Decision Brief</li>
+      <ol class="boot-steps" aria-label="読み込み状況">
+        <li>Cloud API</li>
+        <li>多段供給網</li>
+        <li>AI判断</li>
       </ol>
     </div>
   </div>
 
   <div class="app-shell" id="app-shell">
     <aside class="sidebar" aria-label="画面切り替え">
-      <button class="sidebar-toggle" type="button" id="sidebar-toggle" aria-label="サイドバーを畳む" aria-expanded="true">‹</button>
+      <button class="sidebar-toggle" type="button" id="sidebar-toggle" aria-label="サイドバーを閉じる" aria-expanded="true">‹</button>
 
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">S</div>
         <div class="brand-text">
           <h1>Supply Sentinel</h1>
-          <p>供給制約シナリオ分析AI</p>
+          <p>AI早期警戒・製品影響判断支援</p>
         </div>
       </div>
 
       <nav class="side-nav">
-        <button class="nav-item is-active" type="button" data-view="scenario"><span>シナリオ設定</span></button>
-        <button class="nav-item" type="button" data-view="impact"><span>製品影響・優先順位</span></button>
-        <button class="nav-item" type="button" data-view="actions"><span>打ち手・AI説明</span></button>
+        <button class="nav-item is-active" type="button" data-view="dashboard"><span>予兆検知</span></button>
+        <button class="nav-item" type="button" data-view="scenario"><span>シナリオ化</span></button>
+        <button class="nav-item" type="button" data-view="analysis"><span>製品影響・優先順位</span></button>
+        <button class="nav-item" type="button" data-view="response"><span>打ち手・承認</span></button>
       </nav>
 
       <div class="sidebar-footer">
         <span class="status-dot" aria-hidden="true"></span>
-        <span>デモ用シナリオ分析</span>
+        <span>AI市場監視: 手動実行</span>
       </div>
     </aside>
 
     <main class="workspace">
       <header class="topbar">
         <div>
-          <p class="eyebrow">川下企業SCMチーム向け</p>
-          <h2 id="view-title">シナリオ設定</h2>
+          <p class="eyebrow">AI Early Warning & Scenario Decision Support</p>
+          <h2 id="view-title">予兆検知</h2>
         </div>
-        <div class="topbar-meta scenario-meta">
-          <span id="scenario-summary-chip">供給30%減 / 2週間</span>
-          <span id="policy-source-chip">判定基準: Demo Manufacturing SCM Policy</span>
-          <span class="agent-live-badge" id="ai-mode-chip">AI判断補助: ローカル生成</span>
+        <div class="topbar-meta">
+          <div class="material-switch" id="material-switch" aria-label="監視対象"></div>
+          <div class="scenario-switch" id="scenario-switch" aria-label="デモシナリオ"></div>
+          <span id="scenario"></span>
+          <span id="generated-at"></span>
+          <span class="agent-live-badge" id="agent-live-badge"><span class="agent-live-dot" aria-hidden="true"></span>AI市場監視: 手動実行</span>
         </div>
       </header>
 
-      <section class="view is-active" id="view-scenario" data-view-panel="scenario">
-        <div class="scenario-grid">
-          <section class="panel scenario-control-panel">
-            <div class="panel-head">
+      <section class="view is-active" id="view-dashboard" data-view-panel="dashboard">
+        <section class="panel decision-home-panel">
+          <div class="panel-head compact-head">
+            <div>
+              <h3>今日の判断キュー</h3>
+              <span class="panel-note">サインイン後に見るべき判断、考えるべき論点、次アクション、得られる成果</span>
+            </div>
+          </div>
+          <div id="decision-home"></div>
+        </section>
+
+        <section class="panel signal-flow-panel">
+          <div class="panel-head compact-head">
+            <div>
+              <h3>市場予兆から製品判断まで</h3>
+              <span class="panel-note">AI市場監視で検知した予兆を、供給減少シナリオとSCM判断へ接続</span>
+            </div>
+          </div>
+          <div id="signal-decision-flow"></div>
+        </section>
+        <div class="dashboard-grid">
+          <section class="panel map-panel">
+            <div class="panel-head map-head">
               <div>
-                <h3>供給減少シナリオ</h3>
-                <span class="panel-note">対象素材、供給減少率、影響期間、影響ノードを設定</span>
+                <h3>グローバル供給網</h3>
+                <p>検知した市場予兆を、調達・工場・顧客影響へ接続</p>
               </div>
-              <button class="primary-action" type="button" id="run-scenario">シナリオ実行</button>
+              <div id="map-legend"></div>
             </div>
-            <form class="scenario-form" id="scenario-form"></form>
-          </section>
-
-          <section class="panel policy-panel">
-            <div class="panel-head">
+            <div class="map-toolbar" aria-label="地図操作">
+              <div class="map-tool-group" role="group" aria-label="ズーム">
+                <button type="button" class="map-tool" id="map-zoom-in" aria-label="拡大">+</button>
+                <button type="button" class="map-tool" id="map-zoom-out" aria-label="縮小">−</button>
+                <button type="button" class="map-tool wide" id="map-reset" aria-label="全体表示">全体</button>
+              </div>
+              <div class="map-tool-group" role="group" aria-label="表示範囲">
+                <button type="button" class="map-tool wide" data-map-focus="asia">アジア</button>
+                <button type="button" class="map-tool wide" data-map-focus="japan">日本</button>
+              </div>
+            </div>
+            <canvas id="world-map"></canvas>
+            <aside class="map-insight" id="map-insight" aria-live="polite">
+              <span class="map-insight-kicker">マップ分析</span>
+              <strong>要対応ルートを選択</strong>
+              <p>地図上の供給元・工場・輸送ルートをクリックすると、調達比率、リードタイム、業務影響を確認できます。</p>
+            </aside>
+            <div class="demo-console" aria-label="デモ操作">
               <div>
-                <h3>企業判断基準</h3>
-                <span class="panel-note" id="policy-note">閾値と優先順位の重みはデモ企業設定</span>
+                <span class="demo-kicker">AI市場監視デモ</span>
+                <strong id="demo-stage-title">予兆検知待機中</strong>
+                <p id="demo-stage-detail">市場予兆を検知し、供給減少シナリオと製品影響へ接続します。</p>
               </div>
-              <button class="ghost-action" type="button" id="reset-policy">基準を戻す</button>
+              <div class="demo-controls">
+                <button class="primary-action" type="button" id="demo-play">予兆検知から影響分析まで実行</button>
+                <button class="ghost-action" type="button" id="demo-reset">リセット</button>
+              </div>
+              <div class="demo-progress" aria-hidden="true"><span id="demo-progress-bar"></span></div>
             </div>
-            <form class="policy-form" id="policy-form"></form>
+            <div id="map-tooltip" hidden></div>
           </section>
 
-          <section class="panel kpi-strip-panel">
+          <aside class="dashboard-side">
+            <section class="panel evidence-panel">
+              <div class="panel-head compact-head">
+                <h3>情報源と根拠</h3>
+                <span class="panel-note">URL・取得時刻・クエリ・抽出結果</span>
+              </div>
+              <div id="live-evidence-list"></div>
+            </section>
+
+            <section class="panel agent-activity-panel">
+              <div class="panel-head compact-head">
+                <h3>AI Agent Pipeline</h3>
+                <span class="panel-note">監視・根拠検証・シナリオ化・照合・判断説明</span>
+              </div>
+              <div id="agent-activity-log"></div>
+            </section>
+          </aside>
+
+          <section class="panel mix-panel">
             <div class="panel-head compact-head">
-              <h3>計算結果サマリ</h3>
-              <span class="panel-note">数値はルールベース計算。AIは説明のみ。</span>
+              <h3>調達構成</h3>
+              <span class="panel-note">影響を受ける供給ルート</span>
             </div>
-            <div class="decision-kpis" id="decision-kpis"></div>
+            <div id="sourcing-mix"></div>
           </section>
 
-          <section class="panel basis-panel">
+          <section class="panel summary-panel">
             <div class="panel-head compact-head">
-              <h3>シナリオ根拠</h3>
-              <span class="panel-note">デモ用想定情報。リアルタイムニュース取得ではありません。</span>
+              <h3>予兆検知イベント</h3>
+              <span class="panel-note">市場監視から業務判断までの順序</span>
             </div>
-            <div id="scenario-basis"></div>
+            <div id="event-log"></div>
           </section>
         </div>
       </section>
 
-      <section class="view" id="view-impact" data-view-panel="impact">
-        <div class="impact-grid">
-          <section class="panel product-ranking-panel">
+      <section class="view" id="view-analysis" data-view-panel="analysis">
+        <div class="analysis-grid">
+          <section class="panel network-panel">
             <div class="panel-head">
               <div>
-                <h3>製品別影響ランキング</h3>
-                <span class="panel-note">BOM・在庫・受注・代替材・サプライヤ依存を企業基準で優先度化</span>
+                <h3>多段サプライヤネットワーク</h3>
+                <span class="panel-note">自社だけでなく、1次・2次サプライヤまで波及を追跡</span>
               </div>
+              <div id="network-legend"></div>
             </div>
-            <div class="table-scroll">
-              <table class="product-table">
-                <thead>
-                  <tr>
-                    <th>製品名</th>
-                    <th>影響素材</th>
-                    <th>影響サプライヤー / Tier</th>
-                    <th>在庫残日数</th>
-                    <th>売上影響</th>
-                    <th>顧客優先度</th>
-                    <th>代替材承認</th>
-                    <th>単一依存</th>
-                    <th>推奨判断</th>
-                    <th>判断理由</th>
-                  </tr>
-                </thead>
-                <tbody id="product-impact-body"></tbody>
-              </table>
+            <div class="network-body">
+              <div class="network-story" id="network-story"></div>
+              <div class="network-canvas" id="supply-network"></div>
+              <div class="network-selection" id="network-selection" aria-live="polite"></div>
             </div>
           </section>
 
-          <section class="panel decision-output-panel">
-            <div class="panel-head compact-head">
-              <h3>判断アウトプット</h3>
-              <span class="panel-note">守る製品、縮小候補、供給配分候補</span>
+          <section class="panel timeline-panel evidence-timeline-panel">
+            <div class="panel-head">
+              <h3>変動タイムライン</h3>
+              <span class="panel-note">どの時点の記事で影響判断が変わったか</span>
             </div>
-            <div class="decision-output-grid">
-              <div>
-                <h4>守る製品</h4>
-                <div id="protected-products"></div>
-              </div>
-              <div>
-                <h4>縮小候補</h4>
-                <div id="reduction-candidates"></div>
-              </div>
-              <div>
-                <h4>供給配分候補</h4>
-                <div id="allocation-candidates"></div>
-              </div>
-            </div>
+            <div id="scenario-timeline"></div>
           </section>
 
-          <section class="panel mitigation-panel">
-            <div class="panel-head compact-head">
-              <h3>代替策・事前準備</h3>
-              <span class="panel-note">代替材承認、在庫積み増し、調達先分散</span>
+          <section class="panel orders-panel product-ranking-panel">
+            <div class="panel-head">
+              <h3>製品別影響・優先順位</h3>
+              <span class="panel-note">AI生成シナリオ、BOM、在庫、受注、企業基準から優先順位化</span>
             </div>
-            <div class="mitigation-grid">
-              <section>
-                <h4>代替材確認</h4>
-                <ul id="alternative-items"></ul>
-              </section>
-              <section>
-                <h4>在庫積み増し</h4>
-                <ul id="inventory-items"></ul>
-              </section>
-              <section>
-                <h4>調達先分散</h4>
-                <ul id="supplier-items"></ul>
-              </section>
+            <div id="product-impact-ranking"></div>
+          </section>
+
+          <section class="panel provenance-panel">
+            <div class="panel-head">
+              <h3>情報源と根拠</h3>
+              <span class="panel-note">どの情報がどのノードを裏付けたか</span>
             </div>
+            <div id="provenance-list"></div>
+          </section>
+
+          <section class="panel inventory-panel">
+            <div class="panel-head">
+              <h3>BOM・在庫照合</h3>
+              <span class="panel-note">残日在庫順</span>
+            </div>
+            <div id="inventory-ranking"></div>
+          </section>
+
+          <section class="panel alternatives-panel">
+            <div class="panel-head">
+              <h3>代替材候補</h3>
+              <span class="panel-note">承認状態と制約</span>
+            </div>
+            <div id="alternatives-table"></div>
           </section>
         </div>
       </section>
 
-      <section class="view" id="view-actions" data-view-panel="actions">
-        <div class="actions-grid">
-          <section class="panel ai-scenario-brief-panel">
+      <section class="view" id="view-response" data-view-panel="response">
+        <div class="response-grid">
+          <section class="panel response-brief-panel">
+            <div class="panel-head">
+              <h3>打ち手・承認ボード</h3>
+              <span class="panel-note">今すぐ判断、事前準備、継続監視、人間承認</span>
+            </div>
+            <div id="action-decision-board"></div>
+          </section>
+
+          <section class="panel agent-run-panel">
             <div class="panel-head">
               <div>
-                <h3>AI Scenario Brief</h3>
-                <span class="panel-note">計算済みmetricsと企業基準だけを参照するAI判断補助サマリ</span>
+                <h3>Agent Run Console</h3>
+                <span class="panel-note">市場監視から判断ゲートまでの実行トレース</span>
               </div>
-              <span class="local-brief-badge">ローカル生成 / デモ回答</span>
+              <button type="button" class="agentrun-play" id="agent-run-play">Pipelineを再生</button>
             </div>
-            <div id="ai-scenario-brief"></div>
+            <div id="agent-run-console"></div>
           </section>
 
-          <section class="panel approval-panel">
-            <div class="panel-head compact-head">
-              <h3>Human-in-the-loop 承認待ち</h3>
-              <span class="panel-note">発注・切替・通知・計画変更はAIが実行しません</span>
+          <section class="panel agent-panel">
+            <div class="panel-head">
+              <div>
+                <h3>Supply Sentinel AI</h3>
+                <span class="panel-note">市場根拠・シナリオ条件・計算根拠・承認事項を説明</span>
+              </div>
+              <span class="agent-status" id="agent-status">AI待機中</span>
             </div>
-            <div id="approval-queue"></div>
+            <div class="agent-chat">
+              <div class="agent-thread" id="agent-thread" aria-live="polite"></div>
+              <div class="agent-suggestions" id="agent-suggestions"></div>
+              <form class="agent-form" id="agent-form">
+                <input id="agent-input" type="text" autocomplete="off" placeholder="例: まず誰に何を確認する？">
+                <button type="submit">相談</button>
+              </form>
+            </div>
           </section>
 
-          <section class="panel agent-trace-panel">
-            <div class="panel-head compact-head">
-              <h3>Agent Run Console</h3>
-              <span class="panel-note">AI説明生成の補助トレース。メイン判断は上の出力を参照。</span>
+          <section class="panel ai-panel">
+            <div class="panel-head">
+              <h3>AI判断ログ</h3>
+              <span class="panel-note">市場予兆 → シナリオ化 → 業務影響</span>
             </div>
-            <div id="agent-trace"></div>
+            <div id="ai-extraction"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="view-scenario" data-view-panel="scenario">
+        <div class="scenario-settings-grid">
+          <section class="panel generated-scenario-panel">
+            <div class="panel-head">
+              <div>
+                <h3>AI生成シナリオ</h3>
+                <span class="panel-note">検知予兆を供給減少率・影響期間・対象素材へ変換</span>
+              </div>
+              <button class="primary-action" type="button" id="scenario-run-now">企業基準で影響再計算</button>
+            </div>
+            <div id="generated-scenario"></div>
+          </section>
+
+          <section class="panel scenario-settings-panel">
+            <div class="panel-head">
+              <div>
+                <h3>AI生成値 + 人間調整</h3>
+                <span class="panel-note">AI提案値をSCMチームが調整し、感度分析へつなげる</span>
+              </div>
+            </div>
+            <div id="scenario-settings"></div>
+          </section>
+
+          <section class="panel company-policy-panel">
+            <div class="panel-head">
+              <h3>企業判断基準</h3>
+              <span class="panel-note">閾値と重みはアプリ固定ではなく企業ポリシー</span>
+            </div>
+            <div id="company-policy-panel"></div>
+          </section>
+
+          <section class="panel evidence-rule-panel">
+            <div class="panel-head">
+              <h3>根拠採用ルール</h3>
+              <span class="panel-note">架空データやURLなし根拠は採用しない</span>
+            </div>
+            <div id="evidence-rules"></div>
           </section>
         </div>
       </section>
     </main>
   </div>
 
+  <script src="./config.js"></script>
   <script type="module" src="./js/app.js"></script>
 </body>
 </html>

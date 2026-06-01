@@ -14,10 +14,6 @@
       "affected_supply_ratio_percent": 70
     }
   },
-  "early_preparation_trigger": {
-    "remaining_supply_ratio_percent_below": 30,
-    "description": "早めの準備とは、供給残量が30%を下回る状態を指す。供給減少率で見ると70%超。"
-  },
   "priority_weights": {
     "customer_priority": 0.3,
     "revenue_impact": 0.25,
